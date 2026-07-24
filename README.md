@@ -106,3 +106,4 @@ If your repo isn't named `corpers-kitchen`, update the `base`/`start_url`/`scope
 Phone numbers are **not** stored on the main order document at all — they live in an admin-only subcollection (`orders/{orderId}/private/contact`), enforced by Firestore security rules, not just hidden by app UI. The public order doc (which powers the live queue and tracking page without login) has no phone field to leak in the first place, even to someone bypassing the UI entirely and querying Firestore directly.
 # corpers-kitchen
 # corpers-kitchen
+# corpers-kitchen
