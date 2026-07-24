@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { scroll-behavior: smooth; }
+  ::selection { background-color: rgba(212, 175, 55, 0.35); color: #fff; }
+  :focus-visible { outline: 2px solid #D4AF37; outline-offset: 3px; border-radius: 4px; }
+  h1, h2, h3, h4 { font-family: theme('fontFamily.display'); letter-spacing: -0.01em; }
+}
+
+@layer components {
+  .glass { @apply bg-ink-800/60 backdrop-blur-xl border border-white/[0.06]; }
+  .glass-card { @apply glass rounded-2xl shadow-glass; }
+  .gold-text { @apply bg-gradient-to-r from-gold-300 via-gold-400 to-gold-500 bg-clip-text text-transparent; }
+  .btn-primary { @apply inline-flex items-center justify-center gap-2 rounded-full bg-gold-400 text-ink-950 font-semibold px-6 py-3 shadow-gold transition-transform duration-200 hover:scale-[1.03] active:scale-[0.98] disabled:opacity-40 disabled:pointer-events-none; }
+  .btn-ghost { @apply inline-flex items-center justify-center gap-2 rounded-full border border-white/15 text-bone-50 px-6 py-3 transition-colors duration-200 hover:border-gold-400/60 hover:text-gold-300; }
+  .eyebrow { @apply text-xs tracking-[0.25em] uppercase text-gold-400/90 font-semibold; }
+  .skeleton { @apply relative overflow-hidden bg-ink-700 before:absolute before:inset-0 before:-translate-x-full before:animate-shimmer before:bg-gradient-to-r before:from-transparent before:via-white/[0.06] before:to-transparent; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; scroll-behavior: auto !important; }
+}
