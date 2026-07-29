@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutDashboard, ListOrdered, Package, BarChart3, LogOut, ChefHat, Wallet } from 'lucide-react'
+import { LayoutDashboard, ListOrdered, Package, BarChart3, LogOut, ChefHat, Wallet, CookingPot } from 'lucide-react'
 import { signOut } from '../lib/auth'
 import { useAdminOrders } from '../hooks/useAdminOrders'
 import { StatsCards } from '../components/admin/StatsCards'
@@ -7,15 +7,17 @@ import { OrdersTable } from '../components/admin/OrdersTable'
 import { InventoryPanel } from '../components/admin/InventoryPanel'
 import { AnalyticsPanel } from '../components/admin/AnalyticsPanel'
 import { PaymentsPanel } from '../components/admin/PaymentsPanel'
+import { KitchenBoard } from '../components/admin/KitchenBoard'
 import { OrderingToggle } from '../components/admin/OrderingToggle'
 import { PaystackToggle } from '../components/admin/PaystackToggle'
 import { OrderHistoryLookup } from '../components/admin/OrderHistoryLookup'
 import type { Order } from '../types'
 
-type Tab = 'overview' | 'orders' | 'inventory' | 'payments' | 'analytics'
+type Tab = 'overview' | 'kitchen' | 'orders' | 'inventory' | 'payments' | 'analytics'
 
 const TABS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
+  { id: 'kitchen', label: 'Kitchen Board', icon: CookingPot },
   { id: 'orders', label: 'Orders', icon: ListOrdered },
   { id: 'inventory', label: 'Inventory', icon: Package },
   { id: 'payments', label: 'Payments', icon: Wallet },
@@ -66,6 +68,7 @@ export function AdminDashboardPage() {
                 </div>
               </div>
             )}
+            {tab === 'kitchen' && <KitchenBoard orders={orders} />}
             {tab === 'orders' && (
               <div>
                 <OrderHistoryLookup onResults={setHistoricalOrders} />

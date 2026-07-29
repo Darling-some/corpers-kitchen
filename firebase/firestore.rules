@@ -56,7 +56,7 @@ function isValidNewOrder(data) {
 
 function isAdminOrderUpdate(newData, oldData) {
   return isAdmin()
-    && newData.diff(oldData).affectedKeys().hasOnly(['status', 'updatedAt', 'deliveredAt', 'paymentStatus']);
+    && newData.diff(oldData).affectedKeys().hasOnly(['status', 'updatedAt', 'deliveredAt', 'paymentStatus', 'actualReadyAt']);
 }
 
 // Lets an unauthenticated customer flip their own order from

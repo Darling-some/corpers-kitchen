@@ -8,6 +8,7 @@ import { HomePage } from './pages/Home'
 const OrderPage = lazy(() => import('./pages/Order').then((m) => ({ default: m.OrderPage })))
 const TrackPage = lazy(() => import('./pages/Track').then((m) => ({ default: m.TrackPage })))
 const ReviewsPage = lazy(() => import('./pages/Reviews').then((m) => ({ default: m.ReviewsPage })))
+const PrivacyPage = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.PrivacyPage })))
 const AdminLoginPage = lazy(() => import('./pages/AdminLogin').then((m) => ({ default: m.AdminLoginPage })))
 const AdminDashboardPage = lazy(() => import('./pages/AdminDashboard').then((m) => ({ default: m.AdminDashboardPage })))
 
@@ -25,6 +26,7 @@ export default function App() {
             <Route path="/order" element={<OrderPage />} />
             <Route path="/track" element={<TrackPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
+            <Route path="/privacy" element={<PrivacyPage />} />
           </Route>
 
           <Route path="/admin/login" element={<AdminLoginPage />} />

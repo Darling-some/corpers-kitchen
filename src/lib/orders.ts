@@ -168,6 +168,12 @@ export async function updateOrderStatus(orderId: string, status: OrderStatus): P
   const ref = doc(db, ORDERS, orderId)
   const patch: Record<string, unknown> = { status, updatedAt: Date.now() }
   if (status === 'delivered') patch.deliveredAt = Date.now()
+  // Recording the real moment an order became ready lets the shared kitchen
+  // clock correct itself for orders still waiting — if the kitchen finishes
+  // faster (or slower) than the 11-minute prediction, everyone still in
+  // line sees their countdown adjust to match reality instead of just
+  // running on the original guess forever.
+  if (status === 'ready') patch.actualReadyAt = Date.now()
   await updateDoc(ref, patch)
 }
 

@@ -69,6 +69,10 @@ export interface Order {
   createdAt: number
   updatedAt: number
   deliveredAt?: number
+  /** The real moment this order was marked 'ready' — used to correct the
+   * shared kitchen clock so later orders' countdowns reflect actual
+   * kitchen speed, not just the original 11-minute prediction. */
+  actualReadyAt?: number
 }
 
 /** Shape of the data that is safe to broadcast on the public live-queue view. */
