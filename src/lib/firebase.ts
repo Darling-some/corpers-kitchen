@@ -22,8 +22,5 @@ assertConfigured()
 
 export const app: FirebaseApp = initializeApp(firebaseConfig)
 export const auth: Auth = getAuth(app)
-// ignoreUndefinedProperties: menu-item fields like `availableOnDays` are
-// legitimately absent for everyday items. Without this, Firestore throws on
-// any `undefined` field instead of just omitting it.
 export const db: Firestore = initializeFirestore(app, { ignoreUndefinedProperties: true })
 export const storage: FirebaseStorage = getStorage(app)

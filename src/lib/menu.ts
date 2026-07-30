@@ -7,9 +7,7 @@ const MENU_ITEMS = 'menuItems'
 
 export function subscribeMenu(callback: (items: MenuItem[]) => void): Unsubscribe {
   const q = query(collection(db, MENU_ITEMS), orderBy('sortOrder', 'asc'))
-  return onSnapshot(q, (snap) => {
-    callback(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<MenuItem, 'id'>) })))
-  })
+  return onSnapshot(q, (snap) => callback(snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<MenuItem, 'id'>) }))))
 }
 
 export async function setStockStatus(itemId: string, stockStatus: StockStatus): Promise<void> {
@@ -33,9 +31,6 @@ export async function deleteMenuItem(itemId: string): Promise<void> {
 export async function seedMenuIfEmpty(existing: MenuItem[]): Promise<void> {
   if (existing.length > 0) return
   const batch = writeBatch(db)
-  SEED_MENU.forEach((item) => {
-    const ref = doc(collection(db, MENU_ITEMS))
-    batch.set(ref, item)
-  })
+  SEED_MENU.forEach((item) => { const ref = doc(collection(db, MENU_ITEMS)); batch.set(ref, item) })
   await batch.commit()
 }

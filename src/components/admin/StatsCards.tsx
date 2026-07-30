@@ -13,7 +13,6 @@ export function StatsCards({ orders }: { orders: Order[] }) {
     { label: 'Completed', value: orders.filter((o) => o.status === 'delivered').length, icon: PackageCheck },
     { label: 'Cancelled', value: orders.filter((o) => o.status === 'cancelled').length, icon: XCircle },
   ]
-
   return (
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {stats.map((s) => (

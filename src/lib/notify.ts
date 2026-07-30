@@ -15,7 +15,5 @@ export function playOrderChime() {
       osc.start(now + i * 0.15)
       osc.stop(now + i * 0.15 + 0.4)
     })
-  } catch {
-    // Audio isn't critical to admin function — fail silently if blocked.
-  }
+  } catch { /* not critical */ }
 }

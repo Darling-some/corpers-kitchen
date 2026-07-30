@@ -28,7 +28,6 @@ export default function App() {
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/privacy" element={<PrivacyPage />} />
           </Route>
-
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
         </Routes>

@@ -1,9 +1,7 @@
 rules_version = '2';
 
 // Only used for optional menu item photos uploaded from the admin
-// dashboard. Payment verification no longer needs Storage at all — manual
-// bank transfers are confirmed by sender name + a matching bank alert, no
-// receipt upload required.
+// dashboard. Payment verification does not use Storage at all.
 service firebase.storage {
   match /b/{bucket}/o {
     match /menu/{fileName} {

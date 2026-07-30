@@ -2,35 +2,14 @@ rules_version = '2';
 
 // Corpers Kitchen — Firestore security rules
 //
-// Guest checkout model: there are no customer accounts. Customers find
-// their own order by knowing its unique order number. Only admin (Firebase
-// Auth) accounts can approve payments, change order status, edit the menu,
+// Guest checkout model: no customer accounts. Customers find their own
+// order by knowing its unique order number. Only admin (Firebase Auth)
+// accounts can approve payments, change order status, edit the menu,
 // open/close ordering, enable/disable Paystack, or read phone numbers.
 //
 // PRIVACY: phone numbers are stored at orders/{orderId}/private/contact,
-// NOT on the main order document. The main order doc is publicly readable
-// (that's what powers the live queue and tracking page without login),
-// but it deliberately has no phone field at all — so there's no way for
-// anyone to read customer phone numbers except an authenticated admin,
-// enforced here at the database level rather than just hidden by app UI.
-//
-// Two payment paths are supported per order:
-//  - Paystack: paid before the order is even written, so it's created
-//    already paymentStatus 'paid' + status 'waiting'.
-//  - Manual bank transfer: created paymentStatus 'pending' + status
-//    'awaiting_payment'. The customer later submits the sender name they
-//    paid from (no receipt upload — the admin checks their own bank alert
-//    and confirms), and only an admin can flip it to 'paid' (which also
-//    moves status to 'waiting', joining the queue).
-//
-// SECURITY NOTE: none of this calls Paystack's or a bank's servers to
-// verify a payment really happened — that would require a backend with a
-// secret key (a Cloud Function), which this static-hosted app doesn't have.
-// The realistic risk is low for a shop this size (no financial incentive
-// beyond a free meal, and a human admin checks their own bank alert before
-// approving any manual transfer). If you outgrow this, add a Cloud
-// Function that calls Paystack's GET /transaction/verify/:reference
-// server-side.
+// NOT on the main order document, which is publicly readable (that's
+// what powers the live queue and tracking page without login).
 
 function isAdmin() {
   return request.auth != null;
@@ -56,12 +35,9 @@ function isValidNewOrder(data) {
 
 function isAdminOrderUpdate(newData, oldData) {
   return isAdmin()
-    && newData.diff(oldData).affectedKeys().hasOnly(['status', 'updatedAt', 'deliveredAt', 'paymentStatus', 'actualReadyAt']);
+    && newData.diff(oldData).affectedKeys().hasOnly(['status', 'updatedAt', 'deliveredAt', 'paymentStatus', 'actualReadyAt', 'confirmedAt']);
 }
 
-// Lets an unauthenticated customer flip their own order from
-// pending/rejected to 'submitted' when they use the "I Have Made Payment"
-// form — but touches only those three fields, nothing else.
 function isCustomerSubmittingPayment(newData, oldData) {
   return oldData.paymentStatus in ['pending', 'rejected']
     && newData.paymentStatus == 'submitted'
@@ -101,9 +77,6 @@ service cloud.firestore {
         || isCustomerSubmittingPayment(request.resource.data, resource.data);
       allow delete: if false;
 
-      // Phone number lives here, never on the parent order doc — admin
-      // read-only, but the customer's own (unauthenticated) checkout
-      // transaction is the one that creates it at order time.
       match /private/{docId} {
         allow read: if isAdmin();
         allow create: if docId == 'contact' && isValidContact(request.resource.data);
@@ -125,8 +98,6 @@ service cloud.firestore {
       allow update, delete: if false;
     }
 
-    // Admin's live switches — ordering open/closed, Paystack enabled/disabled.
-    // Public read (customers need to see the current state), admin-only write.
     match /settings/{settingId} {
       allow read: if true;
       allow write: if isAdmin();
@@ -134,14 +105,10 @@ service cloud.firestore {
 
     match /counters/{counterId} {
       allow read: if true;
-      allow write: if true; // guarded by createOrder()'s own transaction invariants
+      allow write: if true;
     }
 
     match /idempotency/{requestId} {
-      // The order-creation transaction reads this doc first to check for a
-      // duplicate submission before writing — it needs read access to do
-      // that, so this can't be `if false`. Contains only an internal order
-      // ID and a timestamp, nothing sensitive.
       allow read: if true;
       allow create: if true;
       allow update, delete: if false;

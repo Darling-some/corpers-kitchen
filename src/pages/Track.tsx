@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { Search, Clock, FileCheck2, CheckCircle2, Flame, PackageCheck, XCircle, CookingPot, AlertTriangle } from 'lucide-react'
+import { Search, Clock, FileCheck2, CheckCircle2, Flame, PackageCheck, XCircle, CookingPot, AlertTriangle, Bell, BellRing, Copy, Check } from 'lucide-react'
 import { subscribeOrderByNumber } from '../lib/orders'
 import { useQueue } from '../hooks/useQueue'
 import { useMenu } from '../hooks/useMenu'
@@ -9,7 +9,8 @@ import { formatClockTime } from '../utils/orderNumber'
 import { hasFixedBatchItem, menuItemsById } from '../utils/orderTiming'
 import { BankTransferPanel } from '../components/BankTransferPanel'
 import { PaymentSubmissionForm } from '../components/PaymentSubmissionForm'
-import { Countdown } from '../components/Countdown'
+import { notificationsSupported, notificationPermission, requestNotificationPermission, showOrderReadyNotification } from '../lib/orderNotifications'
+import { getLastOrderNumber } from '../lib/orderRecovery'
 import type { Order } from '../types'
 
 const LIFECYCLE_STEPS = [
@@ -24,7 +25,6 @@ const LIFECYCLE_STEPS = [
 function currentStepIndex(order: Order): number {
   if (order.paymentStatus === 'pending' || order.paymentStatus === 'rejected') return 0
   if (order.paymentStatus === 'submitted') return 1
-  // paymentStatus === 'paid' from here on
   if (order.status === 'waiting') return 2
   if (order.status === 'preparing') return 3
   if (order.status === 'ready') return 4
@@ -37,17 +37,57 @@ export function TrackPage() {
   const [input, setInput] = useState(params.get('order') ?? '')
   const [order, setOrder] = useState<Order | null | undefined>(undefined)
   const [showPaymentForm, setShowPaymentForm] = useState(false)
+  const [notifPermission, setNotifPermission] = useState(notificationPermission())
+  const [copied, setCopied] = useState(false)
+  const previousStatus = useRef<Order['status'] | null>(null)
   const { queue } = useQueue()
   const { allItems: menuItems } = useMenu()
 
   const orderNumber = params.get('order')
 
+  // Recovery: if there's no order number in the URL at all (e.g. the tab
+  // was suspended and reloaded while the customer was in their banking
+  // app, before the URL ever updated), fall back to the last order number
+  // we saved locally rather than showing a blank tracker with no way back.
+  useEffect(() => {
+    if (!orderNumber) {
+      const recovered = getLastOrderNumber()
+      if (recovered) {
+        setParams({ order: recovered })
+        setInput(recovered)
+      }
+    }
+  }, [orderNumber, setParams])
+
   useEffect(() => {
     if (!orderNumber) { setOrder(undefined); return }
     setOrder(undefined)
+    previousStatus.current = null
     const unsub = subscribeOrderByNumber(orderNumber, setOrder)
     return unsub
   }, [orderNumber])
+
+  useEffect(() => {
+    if (!order) return
+    if (previousStatus.current !== null && previousStatus.current !== 'ready' && order.status === 'ready') {
+      showOrderReadyNotification(order.orderNumber)
+    }
+    previousStatus.current = order.status
+  }, [order])
+
+  async function handleEnableNotifications() {
+    const result = await requestNotificationPermission()
+    setNotifPermission(result)
+  }
+
+  async function handleCopyOrderNumber() {
+    if (!order) return
+    try {
+      await navigator.clipboard.writeText(order.orderNumber)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 1500)
+    } catch { /* clipboard can fail in rare contexts */ }
+  }
 
   function handleSearch(e: React.FormEvent) {
     e.preventDefault()
@@ -65,7 +105,7 @@ export function TrackPage() {
       <h1 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">Where's my food?</h1>
 
       <form onSubmit={handleSearch} className="mt-8 flex gap-2">
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="e.g. CK-000125" className="flex-1 rounded-xl border border-white/10 bg-ink-900 px-4 py-3 font-mono outline-none focus:border-gold-400/60" />
+        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="e.g. CK-240724-001" className="flex-1 rounded-xl border border-white/10 bg-ink-900 px-4 py-3 font-mono outline-none focus:border-gold-400/60" />
         <button className="btn-primary" type="submit"><Search size={16} /> Track</button>
       </form>
 
@@ -82,7 +122,12 @@ export function TrackPage() {
         <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} className="glass-card mt-10 p-8">
           <div className="mb-6 flex items-center justify-between">
             <div>
-              <p className="font-mono text-sm text-gold-400">{order.orderNumber}</p>
+              <div className="flex items-center gap-2">
+                <p className="font-mono text-sm text-gold-400">{order.orderNumber}</p>
+                <button onClick={handleCopyOrderNumber} className="grid h-6 w-6 place-items-center rounded-full border border-white/15 text-bone-300 hover:border-gold-400/50 hover:text-gold-300" aria-label="Copy order number">
+                  {copied ? <Check size={11} className="text-success" /> : <Copy size={11} />}
+                </button>
+              </div>
               <p className="font-display text-xl font-semibold">{order.customerName.split(' ')[0]}'s Order</p>
               <p className="mt-1 font-mono text-xs text-bone-400">₦{order.total.toLocaleString()}</p>
             </div>
@@ -94,6 +139,10 @@ export function TrackPage() {
             )}
           </div>
 
+          <p className="mb-6 rounded-xl border border-gold-400/20 bg-gold-400/5 px-4 py-2.5 text-center text-xs text-bone-400">
+            Bookmark this page or save your order number — you can look it up here anytime.
+          </p>
+
           {order.status === 'cancelled' ? (
             <p className="text-center text-danger">This order was cancelled. Contact staff if this seems wrong.</p>
           ) : (
@@ -104,9 +153,7 @@ export function TrackPage() {
                   const reached = i <= stepIndex
                   return (
                     <div key={step.key} className="flex flex-1 flex-col items-center px-1 text-center">
-                      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border ${reached ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-white/10 text-bone-400'}`}>
-                        <Icon size={16} />
-                      </span>
+                      <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full border ${reached ? 'border-gold-400 bg-gold-400/15 text-gold-300' : 'border-white/10 text-bone-400'}`}><Icon size={16} /></span>
                       <span className={`mt-2 text-[10px] leading-tight ${reached ? 'text-gold-300' : 'text-bone-400'}`}>{step.label}</span>
                     </div>
                   )
@@ -116,15 +163,10 @@ export function TrackPage() {
                 <motion.div className="h-full bg-gold-400" animate={{ width: `${(Math.max(stepIndex, 0) / (LIFECYCLE_STEPS.length - 1)) * 100}%` }} transition={{ duration: 0.5 }} />
               </div>
 
-              {/* Manual bank transfer flow — only shown before payment is confirmed */}
               {order.paymentMethod === 'manual_transfer' && order.paymentStatus === 'pending' && (
                 <div className="mt-6">
                   <BankTransferPanel orderNumber={order.orderNumber} total={order.total} />
-                  {!showPaymentForm ? (
-                    <button onClick={() => setShowPaymentForm(true)} className="btn-primary mt-4 w-full">I Have Made Payment</button>
-                  ) : (
-                    <PaymentSubmissionForm order={order} onSubmitted={() => setShowPaymentForm(false)} />
-                  )}
+                  {!showPaymentForm ? <button onClick={() => setShowPaymentForm(true)} className="btn-primary mt-4 w-full">I Have Made Payment</button> : <PaymentSubmissionForm order={order} onSubmitted={() => setShowPaymentForm(false)} />}
                 </div>
               )}
 
@@ -135,11 +177,7 @@ export function TrackPage() {
                     <p>Your last payment submission couldn't be confirmed. Please double check the details and submit again.</p>
                   </div>
                   <BankTransferPanel orderNumber={order.orderNumber} total={order.total} />
-                  {!showPaymentForm ? (
-                    <button onClick={() => setShowPaymentForm(true)} className="btn-primary mt-4 w-full">Submit Payment Again</button>
-                  ) : (
-                    <PaymentSubmissionForm order={order} onSubmitted={() => setShowPaymentForm(false)} />
-                  )}
+                  {!showPaymentForm ? <button onClick={() => setShowPaymentForm(true)} className="btn-primary mt-4 w-full">Submit Payment Again</button> : <PaymentSubmissionForm order={order} onSubmitted={() => setShowPaymentForm(false)} />}
                 </div>
               )}
 
@@ -150,15 +188,24 @@ export function TrackPage() {
               )}
 
               {order.paymentStatus === 'paid' && queueEntry && (
-                <div className="mt-6 rounded-xl border border-gold-400/30 bg-gold-400/5 p-5 text-center">
-                  <p className="mb-1 flex items-center justify-center gap-1.5 text-xs text-bone-400">
-                    {isBatchOrder && <CookingPot size={12} className="text-gold-400" />}
-                    {isBatchOrder ? 'Batch ready in' : 'Ready in'}
-                  </p>
-                  <Countdown targetMillis={queueEntry.readyAt} className="font-mono text-4xl font-semibold tabular-nums text-gold-300" />
-                  <p className="mt-2 text-xs text-bone-400">
-                    Expected around <span className="text-gold-300">{formatClockTime(queueEntry.readyAt)}</span> (Nigerian time) — updates live, no need to refresh.
-                  </p>
+                <p className="mt-6 text-center text-sm text-bone-400">
+                  {isBatchOrder ? (
+                    <><CookingPot size={13} className="mr-1 inline text-gold-400" />Batch ready by <span className="text-gold-300">{formatClockTime(queueEntry.readyAt)}</span> <span className="text-bone-400">(Nigerian time)</span></>
+                  ) : (
+                    <>Ready by <span className="text-gold-300">{formatClockTime(queueEntry.readyAt)}</span> <span className="text-bone-400">(Nigerian time)</span></>
+                  )}
+                </p>
+              )}
+
+              {notificationsSupported() && order.paymentStatus === 'paid' && order.status !== 'ready' && order.status !== 'delivered' && (
+                <div className="mt-4 text-center">
+                  {notifPermission === 'granted' ? (
+                    <p className="flex items-center justify-center gap-1.5 text-xs text-success"><BellRing size={13} /> We'll notify you the moment it's ready</p>
+                  ) : notifPermission === 'denied' ? (
+                    <p className="text-xs text-bone-400">Notifications are blocked in your browser settings — check back here for updates.</p>
+                  ) : (
+                    <button onClick={handleEnableNotifications} className="btn-ghost !px-4 !py-2 text-xs"><Bell size={13} /> Notify me when it's ready</button>
+                  )}
                 </div>
               )}
             </>

@@ -5,13 +5,5 @@ import { Reviews } from '../components/Reviews'
 import { HowItWorks } from '../components/HowItWorks'
 
 export function HomePage() {
-  return (
-    <>
-      <Hero />
-      <MenuSection />
-      <LiveQueue />
-      <HowItWorks />
-      <Reviews />
-    </>
-  )
+  return (<><Hero /><MenuSection /><LiveQueue /><HowItWorks /><Reviews /></>)
 }

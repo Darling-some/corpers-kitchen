@@ -10,10 +10,7 @@ const STEPS = [
 export function HowItWorks() {
   return (
     <section id="how-it-works" className="mx-auto max-w-6xl px-5 py-20">
-      <div className="mb-10">
-        <span className="eyebrow">Process</span>
-        <h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">How Ordering Works</h2>
-      </div>
+      <div className="mb-10"><span className="eyebrow">Process</span><h2 className="mt-2 font-display text-3xl font-semibold sm:text-4xl">How Ordering Works</h2></div>
       <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
         {STEPS.map((step, i) => (
           <div key={step.title} className="relative">
