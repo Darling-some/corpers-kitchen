@@ -10,6 +10,7 @@ import { PaymentsPanel } from '../components/admin/PaymentsPanel'
 import { KitchenBoard } from '../components/admin/KitchenBoard'
 import { OrderingToggle } from '../components/admin/OrderingToggle'
 import { PaystackToggle } from '../components/admin/PaystackToggle'
+import { BankAccountsToggle } from '../components/admin/BankAccountsToggle'
 import { OrderHistoryLookup } from '../components/admin/OrderHistoryLookup'
 import type { Order } from '../types'
 
@@ -48,6 +49,7 @@ export function AdminDashboardPage() {
             {tab === 'overview' && (
               <div className="space-y-8">
                 <div className="grid gap-4 sm:grid-cols-2"><OrderingToggle /><PaystackToggle /></div>
+                <BankAccountsToggle />
                 <StatsCards orders={orders} />
                 <div><h2 className="mb-4 font-display text-lg font-medium">Latest Orders</h2><OrdersTable orders={orders.slice(0, 10)} /></div>
               </div>

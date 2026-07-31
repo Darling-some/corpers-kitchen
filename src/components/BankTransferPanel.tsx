@@ -1,7 +1,7 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Copy, Check, Landmark, Phone } from 'lucide-react'
-import { BANK_ACCOUNTS } from '../data/bankDetails'
 import { USSD_BANKS } from '../data/ussdCodes'
+import { useBankAccounts } from '../hooks/useBankAccounts'
 
 function CopyField({ label, value }: { label: string; value: string }) {
   const [copied, setCopied] = useState(false)
@@ -26,8 +26,15 @@ function CopyField({ label, value }: { label: string; value: string }) {
 }
 
 export function BankTransferPanel({ orderNumber, total }: { orderNumber: string; total: number }) {
+  const { enabledAccounts } = useBankAccounts()
   const [selectedIndex, setSelectedIndex] = useState(0)
-  const account = BANK_ACCOUNTS[selectedIndex]
+
+  useEffect(() => {
+    if (selectedIndex >= enabledAccounts.length) setSelectedIndex(0)
+  }, [enabledAccounts, selectedIndex])
+
+  const account = enabledAccounts[selectedIndex] ?? enabledAccounts[0]
+  if (!account) return null
 
   return (
     <div className="space-y-3">
@@ -35,11 +42,11 @@ export function BankTransferPanel({ orderNumber, total }: { orderNumber: string;
         <Landmark size={16} className="text-gold-400" /> Pay by bank transfer
       </p>
 
-      {BANK_ACCOUNTS.length > 1 && (
+      {enabledAccounts.length > 1 && (
         <div>
           <p className="mb-1.5 text-xs text-bone-400">Choose whichever bank is working best for you right now:</p>
           <div className="flex flex-wrap gap-2">
-            {BANK_ACCOUNTS.map((acc, i) => (
+            {enabledAccounts.map((acc, i) => (
               <button
                 key={acc.label}
                 type="button"

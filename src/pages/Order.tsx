@@ -8,7 +8,7 @@ import { payWithPaystack } from '../lib/paystack'
 import { useOrderingStatus } from '../hooks/useOrderingStatus'
 import { usePaystackEnabled } from '../hooks/usePaystackEnabled'
 import { saveLastOrderNumber } from '../lib/orderRecovery'
-import type { OrderLineItem } from '../types'
+import type { MenuItem, OrderLineItem } from '../types'
 
 function getClientRequestId(): string {
   const key = 'ck_client_request_id'
@@ -20,6 +20,18 @@ function getClientRequestId(): string {
 function syntheticEmail(phone: string): string {
   const digitsOnly = phone.replace(/\D/g, '') || 'guest'
   return `${digitsOnly}@corperskitchen.com`
+}
+
+const CATEGORY_LABEL: Record<MenuItem['category'], string> = {
+  main: 'Mains', protein: 'Protein', drink: 'Drinks', extra: 'Extras', weekend_special: 'Weekend Special',
+}
+const CATEGORY_ORDER: MenuItem['category'][] = ['weekend_special', 'main', 'protein', 'drink', 'extra']
+
+/** Groups the menu into its own labeled table per category — e.g. every
+ * Noodles-type main sits together, every extra sits together — instead of
+ * one long mixed list, so customers can find what they want faster. */
+function groupByCategory(items: MenuItem[]): { category: MenuItem['category']; items: MenuItem[] }[] {
+  return CATEGORY_ORDER.map((category) => ({ category, items: items.filter((i) => i.category === category) })).filter((g) => g.items.length > 0)
 }
 
 type PaymentChoice = 'paystack' | 'manual_transfer'
@@ -46,6 +58,7 @@ export function OrderPage() {
     [quantities, todaysMenu]
   )
   const total = lineItems.reduce((sum, i) => sum + i.price * i.quantity, 0)
+  const menuGroups = useMemo(() => groupByCategory(todaysMenu), [todaysMenu])
 
   function adjust(itemId: string, delta: number) { setQuantities((prev) => ({ ...prev, [itemId]: Math.max(0, (prev[itemId] ?? 0) + delta) })) }
 
@@ -102,20 +115,27 @@ export function OrderPage() {
         <div>
           <h2 className="mb-4 font-display text-lg font-medium">Menu</h2>
           {menuLoading && <div className="grid gap-3">{[...Array(4)].map((_, i) => <div key={i} className="skeleton h-16 rounded-xl" />)}</div>}
-          <div className="grid gap-3">
-            {todaysMenu.map((item) => {
-              const qty = quantities[item.id] ?? 0
-              return (
-                <div key={item.id} className="glass-card flex items-center justify-between gap-4 p-4">
-                  <div><p className="font-medium">{item.name}</p><p className="font-mono text-sm text-gold-400">₦{item.price.toLocaleString()}</p></div>
-                  <div className="flex items-center gap-3">
-                    <button type="button" onClick={() => adjust(item.id, -1)} disabled={qty === 0} className="grid h-8 w-8 place-items-center rounded-full border border-white/15 disabled:opacity-30" aria-label={`Remove one ${item.name}`}><Minus size={14} /></button>
-                    <span className="w-5 text-center tabular-nums">{qty}</span>
-                    <button type="button" onClick={() => adjust(item.id, 1)} className="grid h-8 w-8 place-items-center rounded-full border border-gold-400/50 text-gold-400" aria-label={`Add one ${item.name}`}><Plus size={14} /></button>
-                  </div>
+          <div className="space-y-6">
+            {menuGroups.map((group) => (
+              <div key={group.category}>
+                <h3 className="eyebrow mb-2">{CATEGORY_LABEL[group.category]}</h3>
+                <div className="grid gap-3">
+                  {group.items.map((item) => {
+                    const qty = quantities[item.id] ?? 0
+                    return (
+                      <div key={item.id} className="glass-card flex items-center justify-between gap-4 p-4">
+                        <div><p className="font-medium">{item.name}</p><p className="font-mono text-sm text-gold-400">₦{item.price.toLocaleString()}</p></div>
+                        <div className="flex items-center gap-3">
+                          <button type="button" onClick={() => adjust(item.id, -1)} disabled={qty === 0} className="grid h-8 w-8 place-items-center rounded-full border border-white/15 disabled:opacity-30" aria-label={`Remove one ${item.name}`}><Minus size={14} /></button>
+                          <span className="w-5 text-center tabular-nums">{qty}</span>
+                          <button type="button" onClick={() => adjust(item.id, 1)} className="grid h-8 w-8 place-items-center rounded-full border border-gold-400/50 text-gold-400" aria-label={`Add one ${item.name}`}><Plus size={14} /></button>
+                        </div>
+                      </div>
+                    )
+                  })}
                 </div>
-              )
-            })}
+              </div>
+            ))}
           </div>
         </div>
 
