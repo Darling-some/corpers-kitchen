@@ -1,8 +1,8 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { QRCodeSVG } from 'qrcode.react'
-import { Download, TrendingUp, Award, Clock3, Timer, Loader2 } from 'lucide-react'
+import { Download, TrendingUp, Award, Clock3, Timer, Loader2, ListOrdered } from 'lucide-react'
 import { fetchOrdersInRange, fetchPhonesForOrders } from '../../lib/orders'
-import { revenueOf, bestSellingItem, peakOrderingHour, averagePrepMinutes, ordersToCsv, downloadCsv } from '../../utils/analytics'
+import { revenueOf, bestSellingItem, peakOrderingHour, averagePrepMinutes, ordersToCsv, downloadCsv, salesByItem } from '../../utils/analytics'
 import type { Order } from '../../types'
 
 type Range = 'daily' | 'weekly' | 'monthly'
@@ -32,6 +32,7 @@ export function AnalyticsPanel() {
   }
 
   const orderUrl = `${window.location.origin}${import.meta.env.BASE_URL}order`
+  const itemSales = useMemo(() => salesByItem(orders), [orders])
 
   return (
     <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
@@ -47,6 +48,34 @@ export function AnalyticsPanel() {
           <Metric icon={Timer} label="Avg Prep Time" value={`${averagePrepMinutes(orders)} min`} loading={loading} />
         </div>
         <p className="mt-4 text-xs text-bone-400">{orders.length} order{orders.length === 1 ? '' : 's'} in this range · {orders.filter((o) => o.status === 'delivered').length} completed</p>
+
+        <div className="mt-6">
+          <h3 className="mb-3 flex items-center gap-1.5 text-sm font-medium text-bone-100"><ListOrdered size={14} className="text-gold-400" /> Sales by Item</h3>
+          {loading && <div className="skeleton h-40 rounded-2xl" />}
+          {!loading && itemSales.length === 0 && <p className="text-sm text-bone-400">No paid sales in this range yet.</p>}
+          {!loading && itemSales.length > 0 && (
+            <div className="glass-card overflow-hidden">
+              <table className="w-full text-left text-sm">
+                <thead>
+                  <tr className="border-b border-white/10 text-xs uppercase tracking-wide text-bone-400">
+                    <th className="px-4 py-2.5">Item</th>
+                    <th className="px-4 py-2.5 text-right">Qty Sold</th>
+                    <th className="px-4 py-2.5 text-right">Revenue</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {itemSales.map((row) => (
+                    <tr key={row.name} className="border-b border-white/5 last:border-0">
+                      <td className="px-4 py-2.5">{row.name}</td>
+                      <td className="px-4 py-2.5 text-right font-mono">{row.quantity}</td>
+                      <td className="px-4 py-2.5 text-right font-mono text-gold-400">₦{row.revenue.toLocaleString()}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
       </div>
       <div className="glass-card flex flex-col items-center p-6 text-center">
         <p className="eyebrow mb-4">Scan to Order</p>

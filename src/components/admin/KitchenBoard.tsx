@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { ChefHat, Clock, CookingPot, Loader2 } from 'lucide-react'
+import { ChefHat, Clock, CookingPot, Loader2, MessageSquare } from 'lucide-react'
 import { updateOrderStatus } from '../../lib/orders'
 import { useMenu } from '../../hooks/useMenu'
 import { groupOrdersByItem, menuItemsById } from '../../utils/orderTiming'
@@ -38,6 +38,11 @@ export function KitchenBoard({ orders }: { orders: Order[] }) {
                   <p className="font-mono text-xs text-gold-400">{order.orderNumber}</p>
                   <p className="text-sm">{order.customerName.split(' ')[0]} <span className="text-bone-400">× {quantity}</span></p>
                   <p className="flex items-center gap-1 text-[10px] text-bone-400"><Clock size={9} /> {new Date(order.createdAt).toLocaleTimeString('en-NG', { timeZone: 'Africa/Lagos', hour: 'numeric', minute: '2-digit' })}</p>
+                  {order.specialInstructions && (
+                    <p className="mt-1 flex items-start gap-1 rounded-lg bg-gold-400/10 px-2 py-1 text-xs text-gold-300">
+                      <MessageSquare size={11} className="mt-0.5 shrink-0" /> {order.specialInstructions}
+                    </p>
+                  )}
                 </div>
                 <button onClick={() => markPrepared(order.id)} disabled={markingId === order.id} className="shrink-0 rounded-full border border-gold-400/50 bg-gold-400/10 px-3 py-1.5 text-xs font-medium text-gold-300 hover:bg-gold-400/20">
                   {markingId === order.id ? <Loader2 className="animate-spin" size={12} /> : 'Prepared'}

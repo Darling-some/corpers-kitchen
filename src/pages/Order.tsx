@@ -123,9 +123,14 @@ export function OrderPage() {
                   {group.items.map((item) => {
                     const qty = quantities[item.id] ?? 0
                     return (
-                      <div key={item.id} className="glass-card flex items-center justify-between gap-4 p-4">
-                        <div><p className="font-medium">{item.name}</p><p className="font-mono text-sm text-gold-400">₦{item.price.toLocaleString()}</p></div>
-                        <div className="flex items-center gap-3">
+                      <div key={item.id} className="glass-card flex items-center gap-4 p-4">
+                        {item.imageUrl ? (
+                          <img src={item.imageUrl} alt={item.name} className="h-14 w-14 shrink-0 rounded-xl object-cover" loading="lazy" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+                        ) : (
+                          <div className="grid h-14 w-14 shrink-0 place-items-center rounded-xl bg-ink-800/60 text-bone-400/40 font-display text-lg">{item.name.charAt(0)}</div>
+                        )}
+                        <div className="flex-1"><p className="font-medium">{item.name}</p><p className="font-mono text-sm text-gold-400">₦{item.price.toLocaleString()}</p></div>
+                        <div className="flex shrink-0 items-center gap-3">
                           <button type="button" onClick={() => adjust(item.id, -1)} disabled={qty === 0} className="grid h-8 w-8 place-items-center rounded-full border border-white/15 disabled:opacity-30" aria-label={`Remove one ${item.name}`}><Minus size={14} /></button>
                           <span className="w-5 text-center tabular-nums">{qty}</span>
                           <button type="button" onClick={() => adjust(item.id, 1)} className="grid h-8 w-8 place-items-center rounded-full border border-gold-400/50 text-gold-400" aria-label={`Add one ${item.name}`}><Plus size={14} /></button>

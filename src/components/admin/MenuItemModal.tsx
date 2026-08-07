@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { X, Loader2, Trash2 } from 'lucide-react'
+import { X, Loader2, Trash2, Image as ImageIcon } from 'lucide-react'
 import { createMenuItem, upsertMenuItem, deleteMenuItem } from '../../lib/menu'
 import { PREP_MINUTES_PER_ORDER } from '../../utils/orderNumber'
 import type { MenuItem, TimingMode } from '../../types'
@@ -35,6 +35,7 @@ export function MenuItemModal({ item, nextSortOrder, onClose }: MenuItemModalPro
   const [category, setCategory] = useState<MenuItem['category']>(item?.category ?? 'main')
   const [price, setPrice] = useState(item ? String(item.price) : '')
   const [description, setDescription] = useState(item?.description ?? '')
+  const [imageUrl, setImageUrl] = useState(item?.imageUrl ?? '')
   const [availability, setAvailability] = useState(availabilityKeyFor(item?.availableOnDays))
   const [timingMode, setTimingMode] = useState<TimingMode>(item?.timingMode ?? 'per_order')
   const [prepMinutes, setPrepMinutes] = useState(String(item?.prepMinutes ?? PREP_MINUTES_PER_ORDER))
@@ -56,9 +57,9 @@ export function MenuItemModal({ item, nextSortOrder, onClose }: MenuItemModalPro
     const fixedReadyAt = timingMode === 'fixed_time' && fixedReadyAtInput ? new Date(fixedReadyAtInput).getTime() : undefined
     try {
       if (isEditing) {
-        await upsertMenuItem({ ...item, name: name.trim(), category, price: priceNumber, description: description.trim(), availableOnDays, timingMode, prepMinutes: timingMode === 'per_order' ? prepMinutesNumber : undefined, fixedReadyAt })
+        await upsertMenuItem({ ...item, name: name.trim(), category, price: priceNumber, description: description.trim(), imageUrl: imageUrl.trim(), availableOnDays, timingMode, prepMinutes: timingMode === 'per_order' ? prepMinutesNumber : undefined, fixedReadyAt })
       } else {
-        await createMenuItem({ name: name.trim(), category, price: priceNumber, description: description.trim(), stockStatus: 'available', availableOnDays, sortOrder: nextSortOrder, timingMode, prepMinutes: timingMode === 'per_order' ? prepMinutesNumber : undefined, fixedReadyAt })
+        await createMenuItem({ name: name.trim(), category, price: priceNumber, description: description.trim(), imageUrl: imageUrl.trim(), stockStatus: 'available', availableOnDays, sortOrder: nextSortOrder, timingMode, prepMinutes: timingMode === 'per_order' ? prepMinutesNumber : undefined, fixedReadyAt })
       }
       onClose()
     } catch { setError('Something went wrong saving this item. Please try again.') } finally { setSaving(false) }
@@ -89,6 +90,14 @@ export function MenuItemModal({ item, nextSortOrder, onClose }: MenuItemModalPro
             <div><label className="mb-1 block text-sm text-bone-400">Price (₦)</label><input value={price} onChange={(e) => setPrice(e.target.value)} inputMode="numeric" className="w-full rounded-xl border border-white/10 bg-ink-900 px-4 py-2.5 outline-none focus:border-gold-400/60" placeholder="800" /></div>
           </div>
           <div><label className="mb-1 block text-sm text-bone-400">Description (optional)</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full rounded-xl border border-white/10 bg-ink-900 px-4 py-2.5 outline-none focus:border-gold-400/60" placeholder="Short description shown to customers" /></div>
+          <div>
+            <label className="mb-1 flex items-center gap-1.5 text-sm text-bone-400"><ImageIcon size={14} /> Photo URL (optional)</label>
+            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full rounded-xl border border-white/10 bg-ink-900 px-4 py-2.5 outline-none focus:border-gold-400/60" placeholder="https://…" />
+            <p className="mt-1 text-xs text-bone-400">Paste a link to a photo of this dish — e.g. from Google Photos (set to "anyone with the link"), Imgur, or Facebook. Customers see it on the menu and order page.</p>
+            {imageUrl.trim() && (
+              <img src={imageUrl.trim()} alt="Preview" className="mt-2 h-28 w-full rounded-xl object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+            )}
+          </div>
           <div>
             <label className="mb-1 block text-sm text-bone-400">Availability</label>
             <select value={availability} onChange={(e) => setAvailability(e.target.value)} className="w-full rounded-xl border border-white/10 bg-ink-900 px-3 py-2.5 outline-none focus:border-gold-400/60">

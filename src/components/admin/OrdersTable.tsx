@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react'
-import { Search, Phone, ChevronDown, CheckCircle2, ChefHat, Clock, FileCheck2, XCircle, Loader2 } from 'lucide-react'
+import { Search, Phone, ChevronDown, CheckCircle2, ChefHat, Clock, FileCheck2, XCircle, Loader2, MessageSquare } from 'lucide-react'
 import { updateOrderStatus, fetchOrderPhone } from '../../lib/orders'
 import type { Order, OrderStatus, PaymentStatus } from '../../types'
 
@@ -75,7 +75,14 @@ export function OrdersTable({ orders }: { orders: Order[] }) {
                 <tr key={o.id} className="border-b border-white/5 last:border-0">
                   <td className="px-4 py-3 font-mono text-gold-400">{o.orderNumber}</td>
                   <td className="px-4 py-3">{o.customerName}</td>
-                  <td className="px-4 py-3 text-bone-300">{o.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')}</td>
+                  <td className="px-4 py-3 text-bone-300">
+                    {o.items.map((i) => `${i.quantity}× ${i.name}`).join(', ')}
+                    {o.specialInstructions && (
+                      <p className="mt-1 flex items-start gap-1 rounded-lg bg-gold-400/10 px-2 py-1 text-xs text-gold-300">
+                        <MessageSquare size={11} className="mt-0.5 shrink-0" /> {o.specialInstructions}
+                      </p>
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-mono">₦{o.total.toLocaleString()}</td>
                   <td className="px-4 py-3">
                     <span className={`flex items-center gap-1 text-xs ${payMeta.className}`}><PayIcon size={12} /> {payMeta.label} <span className="text-bone-400">· {o.paymentMethod === 'paystack' ? 'Paystack' : 'Transfer'}</span></span>

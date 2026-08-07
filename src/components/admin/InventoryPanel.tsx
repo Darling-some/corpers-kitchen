@@ -34,7 +34,10 @@ export function InventoryPanel() {
       )}
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {allItems.map((item) => (
-          <div key={item.id} className="glass-card p-5">
+          <div key={item.id} className="glass-card overflow-hidden p-5">
+            {item.imageUrl && (
+              <img src={item.imageUrl} alt={item.name} className="-mx-5 -mt-5 mb-3 h-32 w-[calc(100%+2.5rem)] object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+            )}
             <div className="mb-1 flex items-start justify-between gap-2">
               <p className="font-display font-medium">{item.name}</p>
               <button onClick={() => setEditingItem(item)} className="shrink-0 rounded-full border border-white/10 p-1.5 text-bone-300 hover:border-gold-400/50 hover:text-gold-300" aria-label={`Edit ${item.name}`}><Pencil size={13} /></button>

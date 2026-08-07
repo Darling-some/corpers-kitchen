@@ -33,6 +33,33 @@ export function averagePrepMinutes(orders: Order[]): number {
   return Math.round(totalMinutes / delivered.length)
 }
 
+export interface ItemSalesRow {
+  name: string
+  quantity: number
+  revenue: number
+}
+
+/** Groups every sold line item by name — e.g. how many Noodles vs how many
+ * Potatoes were sold in this range, and how much revenue each brought in.
+ * Cancelled orders are excluded; unpaid orders (pending/rejected/submitted
+ * bank transfers) are excluded too, since they haven't actually sold yet. */
+export function salesByItem(orders: Order[]): ItemSalesRow[] {
+  const rows = new Map<string, ItemSalesRow>()
+  orders.forEach((o) => {
+    if (o.status === 'cancelled' || o.paymentStatus !== 'paid') return
+    o.items.forEach((item) => {
+      const existing = rows.get(item.name)
+      if (existing) {
+        existing.quantity += item.quantity
+        existing.revenue += item.price * item.quantity
+      } else {
+        rows.set(item.name, { name: item.name, quantity: item.quantity, revenue: item.price * item.quantity })
+      }
+    })
+  })
+  return Array.from(rows.values()).sort((a, b) => b.revenue - a.revenue)
+}
+
 export function ordersToCsv(orders: Order[], phonesById: Record<string, string> = {}): string {
   const header = ['Order Number', 'Customer', 'Phone', 'Items', 'Total', 'Payment Method', 'Payment Status', 'Status', 'Created At']
   const rows = orders.map((o) => [
