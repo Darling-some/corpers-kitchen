@@ -43,6 +43,7 @@ export function MenuItemModal({ item, nextSortOrder, onClose }: MenuItemModalPro
   const [saving, setSaving] = useState(false)
   const [deleting, setDeleting] = useState(false)
   const [error, setError] = useState('')
+  const [imageLoadFailed, setImageLoadFailed] = useState(false)
 
   async function handleSave(e: React.FormEvent) {
     e.preventDefault()
@@ -92,10 +93,28 @@ export function MenuItemModal({ item, nextSortOrder, onClose }: MenuItemModalPro
           <div><label className="mb-1 block text-sm text-bone-400">Description (optional)</label><textarea value={description} onChange={(e) => setDescription(e.target.value)} rows={2} className="w-full rounded-xl border border-white/10 bg-ink-900 px-4 py-2.5 outline-none focus:border-gold-400/60" placeholder="Short description shown to customers" /></div>
           <div>
             <label className="mb-1 flex items-center gap-1.5 text-sm text-bone-400"><ImageIcon size={14} /> Photo URL (optional)</label>
-            <input value={imageUrl} onChange={(e) => setImageUrl(e.target.value)} className="w-full rounded-xl border border-white/10 bg-ink-900 px-4 py-2.5 outline-none focus:border-gold-400/60" placeholder="https://…" />
-            <p className="mt-1 text-xs text-bone-400">Paste a link to a photo of this dish — e.g. from Google Photos (set to "anyone with the link"), Imgur, or Facebook. Customers see it on the menu and order page.</p>
-            {imageUrl.trim() && (
-              <img src={imageUrl.trim()} alt="Preview" className="mt-2 h-28 w-full rounded-xl object-cover" onError={(e) => { e.currentTarget.style.display = 'none' }} />
+            <input
+              value={imageUrl}
+              onChange={(e) => { setImageUrl(e.target.value); setImageLoadFailed(false) }}
+              className="w-full rounded-xl border border-white/10 bg-ink-900 px-4 py-2.5 outline-none focus:border-gold-400/60"
+              placeholder="https://…"
+            />
+            <p className="mt-1 text-xs text-bone-400">
+              This needs a <strong>direct image link</strong> (ends in .jpg/.png), not a page link. Easiest way: go to <strong>postimages.org</strong>, upload the photo, then copy the "Direct link" it gives you — links from Google Drive, Google Photos, or Facebook usually won't work here.
+            </p>
+            {imageUrl.trim() && !imageLoadFailed && (
+              <img
+                src={imageUrl.trim()}
+                alt="Preview"
+                className="mt-2 h-28 w-full rounded-xl object-cover"
+                onError={() => setImageLoadFailed(true)}
+                onLoad={() => setImageLoadFailed(false)}
+              />
+            )}
+            {imageUrl.trim() && imageLoadFailed && (
+              <p className="mt-2 rounded-xl border border-danger/40 bg-danger/10 px-3 py-2 text-xs text-danger">
+                This link didn't load as an image — it's probably a page link rather than a direct file link. Try postimages.org and use its "Direct link" instead.
+              </p>
             )}
           </div>
           <div>
