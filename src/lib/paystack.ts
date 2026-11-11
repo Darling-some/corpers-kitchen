@@ -1,43 +1,23 @@
-interface PaystackTransaction { reference: string; status: string; trans: string; message: string; transaction: string; trxref: string }
+interface PaystackResponse { reference: string }
 interface PaystackHandler { openIframe(): void }
-interface PaystackPop {
-  setup(options: { key: string; email: string; amount: number; currency?: string; ref?: string; metadata?: Record<string, unknown>; callback: (response: PaystackTransaction) => void; onClose: () => void }): PaystackHandler
-}
+interface PaystackPop { setup(o: { key: string; email: string; amount: number; currency?: string; ref?: string; metadata?: Record<string, unknown>; callback: (r: PaystackResponse) => void; onClose: () => void }): PaystackHandler }
 declare global { interface Window { PaystackPop?: PaystackPop } }
-
-const SCRIPT_SRC = 'https://js.paystack.co/v1/inline.js'
-
-function loadPaystackScript(): Promise<void> {
+const SRC = 'https://js.paystack.co/v1/inline.js'
+function loadScript(): Promise<void> {
   return new Promise((resolve, reject) => {
     if (window.PaystackPop) { resolve(); return }
-    const existing = document.querySelector(`script[src="${SCRIPT_SRC}"]`)
-    if (existing) {
-      existing.addEventListener('load', () => resolve())
-      existing.addEventListener('error', () => reject(new Error('Failed to load Paystack script')))
-      return
-    }
-    const script = document.createElement('script')
-    script.src = SCRIPT_SRC
-    script.async = true
-    script.onload = () => resolve()
-    script.onerror = () => reject(new Error('Failed to load Paystack script'))
-    document.body.appendChild(script)
+    const ex = document.querySelector(`script[src="${SRC}"]`)
+    if (ex) { ex.addEventListener('load', () => resolve()); ex.addEventListener('error', () => reject(new Error('Failed to load Paystack script'))); return }
+    const s = document.createElement('script'); s.src = SRC; s.async = true
+    s.onload = () => resolve(); s.onerror = () => reject(new Error('Failed to load Paystack script'))
+    document.body.appendChild(s)
   })
 }
-
-interface PayWithPaystackInput { email: string; amountNaira: number; reference: string; metadata?: Record<string, unknown> }
-export interface PaystackResult { reference: string; channel: string }
-
-export async function payWithPaystack(input: PayWithPaystackInput): Promise<PaystackResult> {
-  const publicKey = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY
-  if (!publicKey) throw new Error('Paystack is not configured. Add VITE_PAYSTACK_PUBLIC_KEY to .env.local — see .env.example.')
-  await loadPaystackScript()
-  return new Promise<PaystackResult>((resolve, reject) => {
-    const handler = window.PaystackPop!.setup({
-      key: publicKey, email: input.email, amount: Math.round(input.amountNaira * 100), currency: 'NGN', ref: input.reference, metadata: input.metadata,
-      callback: (response) => resolve({ reference: response.reference, channel: 'card' }),
-      onClose: () => reject(new Error('PAYMENT_CANCELLED')),
-    })
-    handler.openIframe()
+export async function payWithPaystack(i: { email: string; amountNaira: number; reference: string; metadata?: Record<string, unknown> }): Promise<{ reference: string }> {
+  const key = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY
+  if (!key) throw new Error('Paystack is not configured. Add VITE_PAYSTACK_PUBLIC_KEY to .env.local.')
+  await loadScript()
+  return new Promise((resolve, reject) => {
+    window.PaystackPop!.setup({ key, email: i.email, amount: Math.round(i.amountNaira * 100), currency: 'NGN', ref: i.reference, metadata: i.metadata, callback: (r) => resolve({ reference: r.reference }), onClose: () => reject(new Error('PAYMENT_CANCELLED')) }).openIframe()
   })
 }

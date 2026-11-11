@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { subscribeOrderingStatus } from '../lib/settings'
-
 export function useOrderingStatus() {
-  const [isOpen, setIsOpen] = useState(false)
+  const [value, setValue] = useState(false)
   const [loading, setLoading] = useState(true)
-  useEffect(() => { const unsub = subscribeOrderingStatus((open) => { setIsOpen(open); setLoading(false) }); return unsub }, [])
-  return { isOpen, loading }
+  useEffect(() => subscribeOrderingStatus((v) => { setValue(v); setLoading(false) }), [])
+  return { value, loading }
 }

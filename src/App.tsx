@@ -4,29 +4,22 @@ import { Loader2 } from 'lucide-react'
 import { PublicLayout } from './components/PublicLayout'
 import { ProtectedRoute } from './components/ProtectedRoute'
 import { HomePage } from './pages/Home'
-
-const OrderPage = lazy(() => import('./pages/Order').then((m) => ({ default: m.OrderPage })))
-const TrackPage = lazy(() => import('./pages/Track').then((m) => ({ default: m.TrackPage })))
-const ReviewsPage = lazy(() => import('./pages/Reviews').then((m) => ({ default: m.ReviewsPage })))
-const PrivacyPage = lazy(() => import('./pages/Privacy').then((m) => ({ default: m.PrivacyPage })))
-const AdminLoginPage = lazy(() => import('./pages/AdminLogin').then((m) => ({ default: m.AdminLoginPage })))
-const AdminDashboardPage = lazy(() => import('./pages/AdminDashboard').then((m) => ({ default: m.AdminDashboardPage })))
-
-function PageFallback() {
-  return <div className="grid min-h-[60vh] place-items-center text-gold-400"><Loader2 className="animate-spin" size={28} /></div>
-}
-
+const page = <T extends string>(loader: () => Promise<Record<T, React.ComponentType>>, key: T) => lazy(() => loader().then((m) => ({ default: m[key] })))
+const OrderPage = page(() => import('./pages/Order'), 'OrderPage')
+const TrackPage = page(() => import('./pages/Track'), 'TrackPage')
+const ReviewsPage = page(() => import('./pages/Reviews'), 'ReviewsPage')
+const PrivacyPage = page(() => import('./pages/Privacy'), 'PrivacyPage')
+const ChatPage = page(() => import('./pages/Chat'), 'ChatPage')
+const AdminLoginPage = page(() => import('./pages/AdminLogin'), 'AdminLoginPage')
+const AdminDashboardPage = page(() => import('./pages/AdminDashboard'), 'AdminDashboardPage')
 export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
-      <Suspense fallback={<PageFallback />}>
+      <Suspense fallback={<div className="grid min-h-[60vh] place-items-center text-gold-400"><Loader2 className="animate-spin" size={28} /></div>}>
         <Routes>
           <Route element={<PublicLayout />}>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/order" element={<OrderPage />} />
-            <Route path="/track" element={<TrackPage />} />
-            <Route path="/reviews" element={<ReviewsPage />} />
-            <Route path="/privacy" element={<PrivacyPage />} />
+            <Route path="/" element={<HomePage />} /><Route path="/order" element={<OrderPage />} /><Route path="/track" element={<TrackPage />} />
+            <Route path="/reviews" element={<ReviewsPage />} /><Route path="/privacy" element={<PrivacyPage />} /><Route path="/chat" element={<ChatPage />} />
           </Route>
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />

@@ -1,6 +1,5 @@
-import { signInWithEmailAndPassword, signOut as firebaseSignOut, onAuthStateChanged, type User } from 'firebase/auth'
+import { signInWithEmailAndPassword, signOut as fbSignOut, onAuthStateChanged, type User } from 'firebase/auth'
 import { auth } from './firebase'
-
-export function signIn(email: string, password: string) { return signInWithEmailAndPassword(auth, email, password) }
-export function signOut() { return firebaseSignOut(auth) }
-export function watchAuth(callback: (user: User | null) => void) { return onAuthStateChanged(auth, callback) }
+export const signIn = (e: string, p: string) => signInWithEmailAndPassword(auth, e, p)
+export const signOut = () => fbSignOut(auth)
+export const watchAuth = (cb: (u: User | null) => void) => onAuthStateChanged(auth, cb)

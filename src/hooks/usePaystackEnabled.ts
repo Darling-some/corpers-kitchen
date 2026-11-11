@@ -1,9 +1,8 @@
 import { useEffect, useState } from 'react'
 import { subscribePaystackEnabled } from '../lib/settings'
-
 export function usePaystackEnabled() {
-  const [enabled, setEnabled] = useState(false)
+  const [value, setValue] = useState(false)
   const [loading, setLoading] = useState(true)
-  useEffect(() => { const unsub = subscribePaystackEnabled((next) => { setEnabled(next); setLoading(false) }); return unsub }, [])
-  return { enabled, loading }
+  useEffect(() => subscribePaystackEnabled((v) => { setValue(v); setLoading(false) }), [])
+  return { value, loading }
 }

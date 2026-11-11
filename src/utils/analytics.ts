@@ -1,83 +1,43 @@
 import type { Order } from '../types'
-
-export function revenueOf(orders: Order[]): number {
-  return orders.filter((o) => o.status !== 'cancelled' && o.paymentStatus === 'paid').reduce((sum, o) => sum + o.total, 0)
-}
-
+export const revenueOf = (orders: Order[]) => orders.filter((o) => o.status !== 'cancelled' && o.paymentStatus === 'paid').reduce((s, o) => s + o.total, 0)
 export function bestSellingItem(orders: Order[]): string {
-  const counts = new Map<string, number>()
-  orders.forEach((o) => {
-    if (o.status === 'cancelled') return
-    o.items.forEach((item) => counts.set(item.name, (counts.get(item.name) ?? 0) + item.quantity))
-  })
-  let best = '—'
-  let max = 0
-  counts.forEach((qty, name) => { if (qty > max) { max = qty; best = name } })
+  const c = new Map<string, number>()
+  orders.forEach((o) => { if (o.status !== 'cancelled') o.items.forEach((i) => c.set(i.name, (c.get(i.name) ?? 0) + i.quantity)) })
+  let best = '—'; let max = 0
+  c.forEach((q, n) => { if (q > max) { max = q; best = n } })
   return best
 }
-
 export function peakOrderingHour(orders: Order[]): string {
-  const buckets = new Array(24).fill(0)
-  orders.forEach((o) => buckets[new Date(o.createdAt).getHours()]++)
-  const peak = buckets.indexOf(Math.max(...buckets))
   if (orders.length === 0) return '—'
-  const period = peak >= 12 ? 'pm' : 'am'
-  const hour12 = peak % 12 === 0 ? 12 : peak % 12
-  return `${hour12}${period}`
+  const b = new Array(24).fill(0)
+  orders.forEach((o) => b[new Date(o.createdAt).getHours()]++)
+  const p = b.indexOf(Math.max(...b))
+  return `${p % 12 === 0 ? 12 : p % 12}${p >= 12 ? 'pm' : 'am'}`
 }
-
 export function averagePrepMinutes(orders: Order[]): number {
-  const delivered = orders.filter((o) => o.status === 'delivered' && o.deliveredAt)
-  if (delivered.length === 0) return 0
-  const totalMinutes = delivered.reduce((sum, o) => sum + (o.deliveredAt! - o.createdAt) / 60000, 0)
-  return Math.round(totalMinutes / delivered.length)
+  const d = orders.filter((o) => o.status === 'delivered' && o.deliveredAt)
+  if (d.length === 0) return 0
+  return Math.round(d.reduce((s, o) => s + (o.deliveredAt! - o.createdAt) / 60000, 0) / d.length)
 }
-
-export interface ItemSalesRow {
-  name: string
-  quantity: number
-  revenue: number
-}
-
-/** Groups every sold line item by name — e.g. how many Noodles vs how many
- * Potatoes were sold in this range, and how much revenue each brought in.
- * Cancelled orders are excluded; unpaid orders (pending/rejected/submitted
- * bank transfers) are excluded too, since they haven't actually sold yet. */
+export interface ItemSalesRow { name: string; quantity: number; revenue: number }
 export function salesByItem(orders: Order[]): ItemSalesRow[] {
   const rows = new Map<string, ItemSalesRow>()
   orders.forEach((o) => {
     if (o.status === 'cancelled' || o.paymentStatus !== 'paid') return
-    o.items.forEach((item) => {
-      const existing = rows.get(item.name)
-      if (existing) {
-        existing.quantity += item.quantity
-        existing.revenue += item.price * item.quantity
-      } else {
-        rows.set(item.name, { name: item.name, quantity: item.quantity, revenue: item.price * item.quantity })
-      }
+    o.items.forEach((i) => {
+      const r = rows.get(i.name)
+      if (r) { r.quantity += i.quantity; r.revenue += i.price * i.quantity } else rows.set(i.name, { name: i.name, quantity: i.quantity, revenue: i.price * i.quantity })
     })
   })
   return Array.from(rows.values()).sort((a, b) => b.revenue - a.revenue)
 }
-
-export function ordersToCsv(orders: Order[], phonesById: Record<string, string> = {}): string {
-  const header = ['Order Number', 'Customer', 'Phone', 'Items', 'Total', 'Payment Method', 'Payment Status', 'Status', 'Created At']
-  const rows = orders.map((o) => [
-    o.orderNumber, o.customerName, phonesById[o.id] ?? '',
-    o.items.map((i) => `${i.quantity}x ${i.name}`).join('; '),
-    o.total.toString(), o.paymentMethod, o.paymentStatus, o.status, new Date(o.createdAt).toISOString(),
-  ])
-  return [header, ...rows].map((row) => row.map((cell) => `"${String(cell).replace(/"/g, '""')}"`).join(',')).join('\n')
+export function ordersToCsv(orders: Order[], phones: Record<string, string> = {}): string {
+  const header = ['Order Number', 'Time', 'Customer', 'Phone', 'Items', 'Total', 'Payment Method', 'Payment Status', 'Status']
+  const rows = orders.map((o) => [o.orderNumber, new Date(o.createdAt).toISOString(), o.customerName, phones[o.id] ?? '', o.items.map((i) => `${i.quantity}x ${i.name}`).join('; '), String(o.total), o.paymentMethod, o.paymentStatus, o.status])
+  return [header, ...rows].map((r) => r.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(',')).join('\n')
 }
-
 export function downloadCsv(filename: string, csv: string) {
-  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' })
-  const url = URL.createObjectURL(blob)
-  const link = document.createElement('a')
-  link.href = url
-  link.download = filename
-  document.body.appendChild(link)
-  link.click()
-  document.body.removeChild(link)
-  URL.revokeObjectURL(url)
+  const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }))
+  const a = document.createElement('a'); a.href = url; a.download = filename
+  document.body.appendChild(a); a.click(); document.body.removeChild(a); URL.revokeObjectURL(url)
 }
