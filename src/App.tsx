@@ -12,6 +12,8 @@ const PrivacyPage = page(() => import('./pages/Privacy'), 'PrivacyPage')
 const ChatPage = page(() => import('./pages/Chat'), 'ChatPage')
 const AdminLoginPage = page(() => import('./pages/AdminLogin'), 'AdminLoginPage')
 const AdminDashboardPage = page(() => import('./pages/AdminDashboard'), 'AdminDashboardPage')
+const AuthPage = page(() => import('./pages/Auth'), 'AuthPage')
+const CommunityPage = page(() => import('./pages/Community'), 'CommunityPage')
 export default function App() {
   return (
     <BrowserRouter basename={import.meta.env.BASE_URL}>
@@ -21,6 +23,8 @@ export default function App() {
             <Route path="/" element={<HomePage />} /><Route path="/order" element={<OrderPage />} /><Route path="/track" element={<TrackPage />} />
             <Route path="/reviews" element={<ReviewsPage />} /><Route path="/privacy" element={<PrivacyPage />} /><Route path="/chat" element={<ChatPage />} />
           </Route>
+          <Route path="/account" element={<PublicLayout />}><Route index element={<AuthPage />} /></Route>
+          <Route path="/community" element={<PublicLayout />}><Route index element={<CommunityPage />} /></Route>
           <Route path="/admin/login" element={<AdminLoginPage />} />
           <Route path="/admin" element={<ProtectedRoute><AdminDashboardPage /></ProtectedRoute>} />
         </Routes>

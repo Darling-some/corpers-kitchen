@@ -1,7 +1,8 @@
-import { collection, doc, runTransaction, onSnapshot, query, where, orderBy, updateDoc, serverTimestamp, getDocs, getDoc, type Unsubscribe } from 'firebase/firestore'
+import { collection, doc, onSnapshot, query, where, orderBy, updateDoc, getDocs, getDoc, type Unsubscribe } from 'firebase/firestore'
+import { httpsCallable } from 'firebase/functions'
+import { functions } from './firebase'
 import { db } from './firebase'
-import { formatOrderNumber, todayDateKey, startOfTodayMillis } from '../utils/orderNumber'
-import { MIN_ORDER_TOTAL } from '../utils/orderRules'
+import { startOfTodayMillis } from '../utils/orderNumber'
 import type { Order, OrderLineItem, OrderStatus, PublicQueueEntry } from '../types'
 
 const ORDERS = 'orders'
@@ -10,29 +11,17 @@ interface NewOrderInput { customerName: string; phone: string; items: OrderLineI
 const ACTIVE: OrderStatus[] = ['waiting', 'preparing', 'ready']
 const mapDocs = (snap: { docs: { id: string; data: () => unknown }[] }) => snap.docs.map((d) => ({ id: d.id, ...(d.data() as Omit<Order, 'id'>) }))
 
-export async function createOrder(input: NewOrderInput, clientRequestId: string): Promise<{ id: string; orderNumber: string }> {
-  const total = input.items.reduce((s, i) => s + i.price * i.quantity, 0)
-  if (total < MIN_ORDER_TOTAL) throw new Error('BELOW_MINIMUM_ORDER')
-  const dateKey = todayDateKey()
-  const counterRef = doc(db, 'counters', dateKey)
-  const idemRef = doc(db, 'idempotency', clientRequestId)
-  const newRef = doc(collection(db, ORDERS))
-  const orderNumber = await runTransaction(db, async (tx) => {
-    if ((await tx.get(idemRef)).exists()) throw new Error('DUPLICATE_SUBMISSION')
-    const cs = await tx.get(counterRef)
-    const next = (cs.exists() ? (cs.data().value as number) : 0) + 1
-    tx.set(counterRef, { value: next }, { merge: true })
-    tx.set(idemRef, { orderId: newRef.id, createdAt: serverTimestamp() })
-    const orderNo = formatOrderNumber(dateKey, next)
-    const pay = input.payment.method === 'paystack'
-      ? { paymentMethod: 'paystack' as const, paymentStatus: 'paid' as const, paymentReference: input.payment.reference, status: 'waiting' as const, confirmedAt: Date.now() }
-      : { paymentMethod: 'manual_transfer' as const, paymentStatus: 'pending' as const, paymentReference: '', status: 'awaiting_payment' as const }
-    const order: Omit<Order, 'id'> = { orderNumber: orderNo, customerName: input.customerName.trim(), items: input.items, total, specialInstructions: input.specialInstructions?.trim() || '', queuePosition: next, createdAt: Date.now(), updatedAt: Date.now(), ...pay }
-    tx.set(newRef, order)
-    tx.set(doc(db, ORDERS, newRef.id, 'private', 'contact'), { phone: input.phone.trim() })
-    return orderNo
+export async function createOrder(input: NewOrderInput, clientRequestId: string): Promise<{ id: string; orderNumber: string; chatToken: string }> {
+  const create = httpsCallable(functions, 'createOrder')
+  const result = await create({
+    customerName: input.customerName,
+    phone: input.phone,
+    items: input.items,
+    specialInstructions: input.specialInstructions || '',
+    payment: input.payment,
+    clientRequestId,
   })
-  return { id: newRef.id, orderNumber }
+  return result.data as { id: string; orderNumber: string; chatToken: string }
 }
 export async function fetchOrderPhone(orderId: string): Promise<string | null> {
   const s = await getDoc(doc(db, ORDERS, orderId, 'private', 'contact'))

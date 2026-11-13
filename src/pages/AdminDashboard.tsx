@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { LayoutDashboard, ListOrdered, Package, BarChart3, LogOut, ChefHat, Wallet, CookingPot, MessagesSquare } from 'lucide-react'
+import { LayoutDashboard, ListOrdered, Package, BarChart3, LogOut, ChefHat, Wallet, CookingPot, MessagesSquare, ShieldAlert } from 'lucide-react'
 import { signOut } from '../lib/auth'
 import { useAdminOrders } from '../hooks/useAdminOrders'
 import { StatsCards } from '../components/admin/StatsCards'
@@ -10,12 +10,13 @@ import { PaymentsPanel } from '../components/admin/PaymentsPanel'
 import { KitchenBoard } from '../components/admin/KitchenBoard'
 import { OrderHistoryLookup } from '../components/admin/OrderHistoryLookup'
 import { ChatModerationPanel } from '../components/admin/ChatModerationPanel'
+import { CommunityModerationPanel } from '../components/admin/CommunityModerationPanel'
 import { OrderingToggle, PaystackToggle, ChatToggle, BankAccountsToggle } from '../components/admin/Switches'
 import type { Order } from '../types'
-type Tab = 'overview' | 'kitchen' | 'orders' | 'inventory' | 'payments' | 'chat' | 'analytics'
+type Tab = 'overview' | 'kitchen' | 'orders' | 'inventory' | 'payments' | 'chat' | 'community' | 'analytics'
 const TABS: { id: Tab; label: string; icon: typeof LayoutDashboard }[] = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard }, { id: 'kitchen', label: 'Kitchen Board', icon: CookingPot }, { id: 'orders', label: 'Orders', icon: ListOrdered },
-  { id: 'inventory', label: 'Inventory', icon: Package }, { id: 'payments', label: 'Payments', icon: Wallet }, { id: 'chat', label: 'Chat', icon: MessagesSquare }, { id: 'analytics', label: 'Analytics', icon: BarChart3 },
+  { id: 'inventory', label: 'Inventory', icon: Package }, { id: 'payments', label: 'Payments', icon: Wallet }, { id: 'chat', label: 'Chat', icon: MessagesSquare }, { id: 'community', label: 'Community', icon: ShieldAlert }, { id: 'analytics', label: 'Analytics', icon: BarChart3 },
 ]
 export function AdminDashboardPage() {
   const [tab, setTab] = useState<Tab>('overview')
@@ -46,6 +47,7 @@ export function AdminDashboardPage() {
             {tab === 'inventory' && <InventoryPanel />}
             {tab === 'payments' && <PaymentsPanel />}
             {tab === 'chat' && <ChatModerationPanel />}
+            {tab === 'community' && <CommunityModerationPanel />}
             {tab === 'analytics' && <AnalyticsPanel />}
           </>
         )}

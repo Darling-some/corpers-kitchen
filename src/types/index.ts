@@ -43,5 +43,5 @@ export interface PublicQueueEntry { orderNumber: string; displayName: string; st
 export type PaymentSubmissionStatus = 'pending' | 'approved' | 'rejected'
 export interface PaymentSubmission { id: string; orderId: string; orderNumber: string; customerName: string; total: number; items: OrderLineItem[]; senderName: string; notes?: string; status: PaymentSubmissionStatus; createdAt: number; reviewedAt?: number }
 export interface Review { id: string; name: string; rating: number; comment: string; createdAt: number }
-export interface ChatMessage { id: string; orderId: string; orderNumber: string; name: string; text: string; createdAt: number; isStaff: boolean }
+export interface ChatMessage { id: string; orderId: string; orderNumber: string; name: string; text: string; createdAt: number; isStaff: boolean; type?: 'text' | 'audio'; audioUrl?: string; audioPath?: string; audioDuration?: number }
 export interface ChatMute { orderNumber: string; name: string; mutedAt: number }

@@ -1,5 +1,6 @@
 import { addDoc, collection, deleteDoc, doc, limit, onSnapshot, orderBy, query, setDoc, type Unsubscribe } from 'firebase/firestore'
-import { db } from './firebase'
+import { httpsCallable } from 'firebase/functions'
+import { db, functions } from './firebase'
 import type { ChatMessage, ChatMute, Order } from '../types'
 
 const MESSAGES = 'chatMessages'
@@ -20,4 +21,32 @@ export const muteChatUser = (orderNumber: string, name: string) => setDoc(doc(db
 export const unmuteChatUser = (orderNumber: string) => deleteDoc(doc(db, MUTES, orderNumber))
 export function subscribeMutes(cb: (m: ChatMute[]) => void): Unsubscribe {
   return onSnapshot(collection(db, MUTES), (s) => cb(s.docs.map((d) => ({ orderNumber: d.id, ...(d.data() as Omit<ChatMute, 'orderNumber'>) }))))
+}
+
+/** Upload a voice note through the trusted backend after private-token validation. */
+export async function uploadVoiceChatMessage(
+  orderId: string,
+  chatToken: string,
+  blob: Blob,
+  duration: number
+): Promise<{ id: string; audioUrl: string; audioPath: string }> {
+  const bytes = new Uint8Array(await blob.arrayBuffer())
+  let binary = ''
+  const chunkSize = 0x8000
+
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize))
+  }
+
+  const audioBase64 = btoa(binary)
+  const callable = httpsCallable(functions, 'sendVoiceChatMessage')
+  const result = await callable({
+    orderId,
+    chatToken,
+    audioBase64,
+    contentType: blob.type || 'audio/webm',
+    duration,
+  })
+
+  return result.data as { id: string; audioUrl: string; audioPath: string }
 }

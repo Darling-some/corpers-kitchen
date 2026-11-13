@@ -7,7 +7,7 @@ import { createOrder } from '../lib/orders'
 import { payWithPaystack } from '../lib/paystack'
 import { useOrderingStatus } from '../hooks/useOrderingStatus'
 import { usePaystackEnabled } from '../hooks/usePaystackEnabled'
-import { saveLastOrderNumber } from '../lib/orderRecovery'
+import { saveLastOrderNumber, saveChatToken } from '../lib/orderRecovery'
 import { MenuItemImage } from '../components/MenuItemImage'
 import { MIN_ORDER_TOTAL } from '../utils/orderRules'
 import type { MenuItem, OrderLineItem } from '../types'
@@ -62,9 +62,10 @@ export function OrderPage() {
     try {
       let reference = ''
       if (pay === 'paystack') reference = (await payWithPaystack({ email: `${phone.replace(/\D/g, '') || 'guest'}@corperskitchen.com`, amountNaira: total, reference: `CK-${id}`, metadata: { customerName: name } })).reference
-      const { orderNumber } = await createOrder({ customerName: name, phone, items: lines, specialInstructions: notes, payment: pay === 'paystack' ? { method: 'paystack', reference } : { method: 'manual_transfer' } }, id)
+      const { orderNumber, chatToken } = await createOrder({ customerName: name, phone, items: lines, specialInstructions: notes, payment: pay === 'paystack' ? { method: 'paystack', reference } : { method: 'manual_transfer' } }, id)
       // Saved before navigating, so the tracking page can recover it if the phone reloads the tab while the customer is in their banking app.
       saveLastOrderNumber(orderNumber)
+      saveChatToken(chatToken)
       sessionStorage.removeItem('ck_client_request_id')
       navigate(`/track?order=${encodeURIComponent(orderNumber)}`)
     } catch (err) {
@@ -72,8 +73,9 @@ export function OrderPage() {
       setError(
         m === 'PAYMENT_CANCELLED' ? 'Payment was not completed, so your order was not placed. You can try again anytime.'
         : m === 'DUPLICATE_SUBMISSION' ? 'Looks like this order already went through. Check "Track Order" for your order number.'
-        : m === 'BELOW_MINIMUM_ORDER' ? `The minimum order is ₦${MIN_ORDER_TOTAL.toLocaleString()}.`
-        : m.startsWith('Paystack is not configured') ? 'Online payment is not set up yet. Try Bank Transfer instead.'
+        : m === 'BELOW_MINIMUM_ORDER' || m.includes('Minimum order') ? `The minimum order is ₦${MIN_ORDER_TOTAL.toLocaleString()}.`
+        : m.includes('currently unavailable') || m.includes('could not be verified') ? m
+        : m.startsWith('Paystack is not configured') || m.startsWith('Online payment verification is not configured') ? 'Online payment is not set up yet. Try Bank Transfer instead.'
         : 'Something went wrong placing your order. Please try again.')
     } finally { setBusy(false) }
   }
