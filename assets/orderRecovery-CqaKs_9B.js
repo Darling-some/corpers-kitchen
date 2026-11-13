@@ -1,0 +1,1 @@
+var e=`ck_last_order_number`,t=`ck_guest_chat_token`,n=t=>{try{localStorage.setItem(e,t)}catch{}},r=()=>{try{return localStorage.getItem(e)}catch{return null}},i=e=>{try{localStorage.setItem(t,e)}catch{}},a=()=>{try{return localStorage.getItem(t)}catch{return null}};export{n as i,r as n,i as r,a as t};

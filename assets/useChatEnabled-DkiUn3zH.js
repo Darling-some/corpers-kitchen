@@ -1,0 +1,1 @@
+import{r as e}from"./rolldown-runtime-XKyaHtl9.js";import{r as t}from"./loader-circle-BcMcyfZI.js";import{s as n}from"./settings-JSy_RpxJ.js";var r=e(t(),1);function i(){let[e,t]=(0,r.useState)(!1),[i,a]=(0,r.useState)(!0);return(0,r.useEffect)(()=>n(e=>{t(e),a(!1)}),[]),{value:e,loading:i}}export{i as t};

@@ -1,1 +1,0 @@
-var e=`ck_last_order_number`;function t(t){try{localStorage.setItem(e,t)}catch{}}function n(){try{return localStorage.getItem(e)}catch{return null}}export{t as n,n as t};
